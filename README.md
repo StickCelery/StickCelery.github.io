@@ -1,1 +1,283 @@
-# StickCelery.github.io
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BrewTrack - Active ABV Calculator</title>
+    <style>
+        :root {
+            --bg-color: #f7fafc;
+            --card-bg: #ffffff;
+            --text-main: #2d3748;
+            --accent: #d69e2e;
+            --accent-hover: #b7791f;
+            --border: #e2e8f0;
+            --success: #38a169;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        h1 { margin: 0; color: var(--accent); }
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        h2 { margin-top: 0; font-size: 1.2rem; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+        button {
+            width: 100%;
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover { background-color: var(--accent-hover); }
+        .batch-item {
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: #fff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .batch-info h3 { margin: 0 0 5px 0; font-size: 1rem; }
+        .batch-info p { margin: 0; font-size: 0.85rem; color: #718096; }
+        .inline-input-group {
+            display: flex;
+            gap: 8px;
+        }
+        .inline-input-group input { width: 80px; }
+        .inline-input-group button { width: auto; padding: 5px 15px; background: var(--success); }
+        .badge {
+            background: #edf2f7;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        .badge.completed { background: #c6f6d5; color: #22543d; }
+        .badge.active { background: #feebc8; color: #744210; }
+        .abv-display { font-weight: bold; font-size: 1.1rem; color: var(--success); }
+        .delete-btn {
+            background: none;
+            border: none;
+            color: #e53e3e;
+            cursor: pointer;
+            font-size: 0.85rem;
+            padding: 0;
+            width: auto;
+            margin-top: 5px;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>🍺 BrewTrack</h1>
+        <p>Start today. Track fermentation. Finish later.</p>
+    </header>
+
+    <!-- Start New Project Form -->
+    <div class="card">
+        <h2>Start New Project</h2>
+        <div class="form-group">
+            <label for="batchName">Batch Name / Style</label>
+            <input type="text" id="batchName" placeholder="e.g., Citra IPA, Blackberry Mead">
+        </div>
+        <div class="form-group">
+            <label for="formulaType">Formula Mapping Type</label>
+            <select id="formulaType">
+                <option value="0.762">Beer Formula (Divisor: 0.762)</option>
+                <option value="0.776">Wine/Mead Formula (Divisor: 0.776)</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="ogReading">Original Gravity (OG)</label>
+            <input type="number" id="ogReading" step="0.001" placeholder="e.g., 1.055">
+        </div>
+        <button onclick="startNewBatch()">Log Initial Starter</button>
+    </div>
+
+    <!-- Active Fermentations Section -->
+    <div class="card">
+        <h2>Active Fermentations (Awaiting Final Gravity)</h2>
+        <div id="activeList"></div>
+    </div>
+
+    <!-- Completed Batches History -->
+    <div class="card">
+        <h2>Completed Brew History</h2>
+        <div id="completedList"></div>
+    </div>
+</div>
+
+<script>
+    // Load existing database state from browser memory
+    let brews = JSON.parse(localStorage.getItem('brewHistoryData')) || [];
+
+    function saveToLocalStorage() {
+        localStorage.setItem('brewHistoryData', JSON.stringify(brews));
+        renderDashboard();
+    }
+
+    function startNewBatch() {
+        const name = document.getElementById('batchName').value.trim();
+        const og = parseFloat(document.getElementById('ogReading').value);
+        const divisor = parseFloat(document.getElementById('formulaType').value);
+
+        if (!name || isNaN(og)) {
+            alert('Please fill out a valid batch name and numeric Starting Original Gravity.');
+            return;
+        }
+
+        const newBatch = {
+            id: Date.now(),
+            name: name,
+            og: og,
+            fg: null,
+            divisor: divisor,
+            status: 'active',
+            startDate: new Date().toLocaleDateString()
+        };
+
+        brews.unshift(newBatch);
+        saveToLocalStorage();
+
+        // Reset inputs
+        document.getElementById('batchName').value = '';
+        document.getElementById('ogReading').value = '';
+    }
+
+    function finishBatch(id) {
+        const fgInput = document.getElementById(`fg-${id}`);
+        const fg = parseFloat(fgInput.value);
+
+        if (isNaN(fg)) {
+            alert('Please enter a valid Final Gravity reading.');
+            return;
+        }
+
+        const batch = brews.find(b => b.id === id);
+        if (batch) {
+            if (fg >= batch.og) {
+                alert('Final Gravity must be lower than Original Gravity. Check your digits!');
+                return;
+            }
+            batch.fg = fg;
+            // Calculate ABV using chosen division formula
+            batch.abv = ((batch.og - batch.fg) / batch.divisor).toFixed(2);
+            batch.status = 'completed';
+            batch.endDate = new Date().toLocaleDateString();
+            saveToLocalStorage();
+        }
+    }
+
+    function deleteBatch(id) {
+        if(confirm("Are you sure you want to permanently delete this brew record?")) {
+            brews = brews.filter(b => b.id !== id);
+            saveToLocalStorage();
+        }
+    }
+
+    function renderDashboard() {
+        const activeContainer = document.getElementById('activeList');
+        const completedContainer = document.getElementById('completedList');
+
+        activeContainer.innerHTML = '';
+        completedContainer.innerHTML = '';
+
+        const activeBrews = brews.filter(b => b.status === 'active');
+        const completedBrews = brews.filter(b => b.status === 'completed');
+
+        if(activeBrews.length === 0) {
+            activeContainer.innerHTML = '<p style="color:#a0aec0; font-size:0.9rem; text-align:center;">No active brews. Start one above!</p>';
+        }
+
+        if(completedBrews.length === 0) {
+            completedContainer.innerHTML = '<p style="color:#a0aec0; font-size:0.9rem; text-align:center;">No finished records yet.</p>';
+        }
+
+        // Render Active Projects
+        activeBrews.forEach(brew => {
+            const div = document.createElement('div');
+            div.className = 'batch-item';
+            div.innerHTML = `
+                <div class="batch-info">
+                    <h3>${brew.name} <span class="badge active">Fermenting</span></h3>
+                    <p>Started: ${brew.startDate} | OG: <strong>${brew.og.toFixed(3)}</strong></p>
+                    <button class="delete-btn" onclick="deleteBatch(${brew.id})">Remove</button>
+                </div>
+                <div class="inline-input-group">
+                    <input type="number" id="fg-${brew.id}" step="0.001" placeholder="FG">
+                    <button onclick="finishBatch(${brew.id})">Done</button>
+                </div>
+            `;
+            activeContainer.appendChild(div);
+        });
+
+        // Render Completed Projects
+        completedBrews.forEach(brew => {
+            const div = document.createElement('div');
+            div.className = 'batch-item';
+            div.innerHTML = `
+                <div class="batch-info">
+                    <h3>${brew.name} <span class="badge completed">Done</span></h3>
+                    <p>Timeline: ${brew.startDate} - ${brew.endDate}</p>
+                    <p>OG: ${brew.og.toFixed(3)} | FG: ${brew.fg.toFixed(3)}</p>
+                    <button class="delete-btn" onclick="deleteBatch(${brew.id})">Delete</button>
+                </div>
+                <div class="abv-display">
+                    ${brew.abv}% ABV
+                </div>
+            `;
+            completedContainer.appendChild(div);
+        });
+    }
+
+    // Run layout on page open
+    renderDashboard();
+</script>
+
+</body>
+</html>
