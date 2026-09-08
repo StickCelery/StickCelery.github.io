@@ -211,7 +211,7 @@
             }
             batch.fg = fg;
             // Calculate ABV using chosen division formula
-            batch.abv = ((batch.og - batch.fg) / batch.divisor).toFixed(2);
+            batch.abv = ((batch.og - batch.fg) * 131.25).toFixed(2);
             batch.status = 'completed';
             batch.endDate = new Date().toLocaleDateString();
             saveToLocalStorage();
