@@ -6,12 +6,12 @@
     <title>AlcCalc</title>
     <style>
         :root {
-            --bg-color: #000000;
+            --bg-color: #212121;
             --card-bg: #404040;
-            --text-main: #ffffff;
-            --accent: #16e04c;
-            --accent-hover: #0e8a2f;
-            --border: #000000;
+            --text-main: #2d3748;
+            --accent: #d69e2e;
+            --accent-hover: #b7791f;
+            --border: #e2e8f0;
             --success: #38a169;
         }
         body {
@@ -55,8 +55,6 @@
             border-radius: 4px;
             box-sizing: border-box;
             font-size: 1rem;
-            background-color: #222222;
-            color: #ffffff;
         }
         button {
             width: 100%;
@@ -76,21 +74,13 @@
             border-radius: 6px;
             padding: 15px;
             margin-bottom: 10px;
-            background: var(--card-bg);
+            background: #fff;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
         .batch-info h3 { margin: 0 0 5px 0; font-size: 1rem; }
-        .batch-info p { margin: 0; font-size: 0.85rem; color: #b0bac5; }
-        
-        /* Custom text color rule for gravity data values */
-        .gravity-text {
-            color: var(--accent) !important;
-            font-weight: bold;
-            margin: 5px 0 !important;
-        }
-
+        .batch-info p { margin: 0; font-size: 0.85rem; color: #718096; }
         .inline-input-group {
             display: flex;
             gap: 8px;
@@ -98,20 +88,19 @@
         .inline-input-group input { width: 80px; }
         .inline-input-group button { width: auto; padding: 5px 15px; background: var(--success); }
         .badge {
-            background: #2d3748;
+            background: #edf2f7;
             padding: 3px 8px;
             border-radius: 12px;
             font-size: 0.75rem;
             font-weight: bold;
-            color: #fff;
         }
         .badge.completed { background: #c6f6d5; color: #22543d; }
         .badge.active { background: #feebc8; color: #744210; }
-        .abv-display { font-weight: bold; font-size: 1.1rem; color: var(--accent); }
+        .abv-display { font-weight: bold; font-size: 1.1rem; color: var(--success); }
         .delete-btn {
             background: none;
             border: none;
-            color: #fc8181;
+            color: #e53e3e;
             cursor: pointer;
             font-size: 0.85rem;
             padding: 0;
@@ -119,6 +108,11 @@
             margin-top: 5px;
             text-decoration: underline;
         }
+        .gravity-text {
+            color: #ffffff;
+            font-weight: 500;
+        }
+
     </style>
 </head>
 <body>
@@ -126,14 +120,14 @@
 <div class="container">
     <header>
         <h1>🍺 Track your shit</h1>
-        <p>I can't be bothered to do the math every week or 2 so do it here instead.</p>
+        <p>ABV Calculation for idiots (dad)</p>
     </header>
 
     <!-- Start New Project Form -->
     <div class="card">
-        <h2>Start New Project</h2>
+        <h2>Start New Beer</h2>
         <div class="form-group">
-            <label for="batchName">Batch Name / Style</label>
+            <label for="batchName">Batch Name / Other Info</label>
             <input type="text" id="batchName" placeholder="e.g., Citra IPA, Blackberry Mead">
         </div>
         <div class="form-group">
@@ -256,8 +250,7 @@
             div.innerHTML = `
                 <div class="batch-info">
                     <h3>${brew.name} <span class="badge active">Fermenting</span></h3>
-                    <p class="gravity-text">OG: ${brew.og.toFixed(3)}</p>
-                    <p>Started: ${brew.startDate}</p>
+                    <p>Started: ${brew.startDate} | OG: <strong>${brew.og.toFixed(3)}</strong></p>
                     <button class="delete-btn" onclick="deleteBatch(${brew.id})">Remove</button>
                 </div>
                 <div class="inline-input-group">
@@ -275,3 +268,21 @@
             div.innerHTML = `
                 <div class="batch-info">
                     <h3>${brew.name} <span class="badge completed">Done</span></h3>
+                    <p>Timeline: ${brew.startDate} - ${brew.endDate}</p>
+                    <p class="gravity-text">OG: ${brew.og.toFixed(3)} | FG: ${brew.fg.toFixed(3)}</p>
+                    <button class="delete-btn" onclick="deleteBatch(${brew.id})">Delete</button>
+                </div>
+                <div class="abv-display">
+                    ${brew.abv}% ABV
+                </div>
+            `;
+            completedContainer.appendChild(div);
+        });
+    }
+
+    // Run layout on page open
+    renderDashboard();
+</script>
+
+</body>
+</html>
