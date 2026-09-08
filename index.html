@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -54,6 +55,8 @@
             border-radius: 4px;
             box-sizing: border-box;
             font-size: 1rem;
+            background-color: #222222;
+            color: #ffffff;
         }
         button {
             width: 100%;
@@ -73,13 +76,21 @@
             border-radius: 6px;
             padding: 15px;
             margin-bottom: 10px;
-            background: #fff;
+            background: var(--card-bg);
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
         .batch-info h3 { margin: 0 0 5px 0; font-size: 1rem; }
-        .batch-info p { margin: 0; font-size: 0.85rem; color: #718096; }
+        .batch-info p { margin: 0; font-size: 0.85rem; color: #b0bac5; }
+        
+        /* Added rule to control gravity text color */
+        .gravity-text {
+            color: var(--accent) !important;
+            font-weight: bold;
+            margin: 5px 0 !important;
+        }
+
         .inline-input-group {
             display: flex;
             gap: 8px;
@@ -87,19 +98,20 @@
         .inline-input-group input { width: 80px; }
         .inline-input-group button { width: auto; padding: 5px 15px; background: var(--success); }
         .badge {
-            background: #edf2f7;
+            background: #2d3748;
             padding: 3px 8px;
             border-radius: 12px;
             font-size: 0.75rem;
             font-weight: bold;
+            color: #fff;
         }
         .badge.completed { background: #c6f6d5; color: #22543d; }
         .badge.active { background: #feebc8; color: #744210; }
-        .abv-display { font-weight: bold; font-size: 1.1rem; color: var(--success); }
+        .abv-display { font-weight: bold; font-size: 1.1rem; color: var(--accent); }
         .delete-btn {
             background: none;
             border: none;
-            color: #e53e3e;
+            color: #fc8181;
             cursor: pointer;
             font-size: 0.85rem;
             padding: 0;
@@ -244,39 +256,9 @@
             div.innerHTML = `
                 <div class="batch-info">
                     <h3>${brew.name} <span class="badge active">Fermenting</span></h3>
-                    <p>Started: ${brew.startDate} | OG: <strong>${brew.og.toFixed(3)}</strong></p>
+                    <p class="gravity-text">OG: ${brew.og.toFixed(3)}</p>
+                    <p>Started: ${brew.startDate}</p>
                     <button class="delete-btn" onclick="deleteBatch(${brew.id})">Remove</button>
                 </div>
                 <div class="inline-input-group">
                     <input type="number" id="fg-${brew.id}" step="0.001" placeholder="FG">
-                    <button onclick="finishBatch(${brew.id})">Done</button>
-                </div>
-            `;
-            activeContainer.appendChild(div);
-        });
-
-        // Render Completed Projects
-        completedBrews.forEach(brew => {
-            const div = document.createElement('div');
-            div.className = 'batch-item';
-            div.innerHTML = `
-                <div class="batch-info">
-                    <h3>${brew.name} <span class="badge completed">Done</span></h3>
-                    <p>Timeline: ${brew.startDate} - ${brew.endDate}</p>
-                    <p>OG: ${brew.og.toFixed(3)} | FG: ${brew.fg.toFixed(3)}</p>
-                    <button class="delete-btn" onclick="deleteBatch(${brew.id})">Delete</button>
-                </div>
-                <div class="abv-display">
-                    ${brew.abv}% ABV
-                </div>
-            `;
-            completedContainer.appendChild(div);
-        });
-    }
-
-    // Run layout on page open
-    renderDashboard();
-</script>
-
-</body>
-</html>
